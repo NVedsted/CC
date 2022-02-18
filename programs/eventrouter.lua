@@ -16,7 +16,7 @@ local function delegate(events, notifiedListeners, notifiedEmitters)
                 rednet.send(id, {
                     events = events,
                     notifiedListeners = notifiedListeners,
-                    notifiedEmitters = notifiedEmitters,
+                    notifiedEmitters = notifiedEmitters
                 }, 'EventsEmitter')
                 local _, message, _ = rednet.receive('EventsEmitted')
                 local newlyNotifiedListeners, newlyNotifiedEmitters = message['notifiedListeners'], message['notifiedEmitters']
@@ -49,6 +49,21 @@ local function emitToListeners(events, notified)
             print('Skipping #' .. tostring(id))
         end
     end
+end
+
+local function emitToListener(id, events)
+    local listeners = { rednet.lookup('EventsReceiver') }
+    print("Searching for listener " .. tostring(id) .. " in " .. tostring(#listeners) .. " listeners")
+
+    for i = 1, #listeners do
+        local currentId = listeners[i]
+        if currentId == id then
+            print('Sending events single-target to #' .. tostring(id))
+            rednet.send(id, events, 'Events')
+            return true
+        end
+    end
+    return false
 end
 
 function queuePopulator()
@@ -99,6 +114,6 @@ framework.run(function()
     rednet.host('EventsEmit', tostring(myID))
     rednet.host('EventsEmitter', tostring(myID))
 
-    print('Evenrouter ready to serve!')
+    print('Eventrouter ready to serve!')
     parallel.waitForAny(queuePopulator, handleQueue, handleDelegator)
 end)
